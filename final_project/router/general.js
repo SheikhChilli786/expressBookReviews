@@ -6,6 +6,32 @@ let users = require("./auth_users.js").users;
 const public_users = express.Router();
 
 
+function getBooks() {
+  return new Promise((resolve, reject) => {
+    axios.get('http://localhost:5000/books')
+      .then(response => {
+        resolve(response.data);
+      })
+      .catch(error => {
+        reject(error);
+      });
+  });
+}
+
+public_users.get('/', function (req, res) {
+  getBooks()
+    .then(books => {
+      res.send(JSON.stringify({ books }, null, 4));
+    })
+    .catch(error => {
+      console.error(error);
+      res.status(500).send('An error occurred while getting books');
+    });
+});
+
+
+
+
 public_users.post("/register", (req,res) => {
     const username = req.body.username;
     const password = req.body.password;
@@ -21,14 +47,37 @@ public_users.post("/register", (req,res) => {
   
 });
 
-// Get the book list available in the shop
 
-public_users.get('/',function (req, res) {
-    res.send(JSON.stringify({books},null,4));
+
+public_users.get('/books',function (req, res) {
+    res.send(books);
 });
 
+
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
+
+
+async function getBookDetails(isbn) {
+  try {
+    const response = await axios.get(`http://localhost:5000/books/${isbn}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+public_users.get('/isbn/:isbn', async function (req, res) {
+  const isbn = req.params.isbn;
+  try {
+    const book = await getBookDetails(isbn);
+    res.send(JSON.stringify({ book }, null, 4));
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('An error occurred while getting book details');
+  }
+});
+
+public_users.get('/books/:isbn',function (req, res) {
     let isbn = req.params.isbn;
     if(books[isbn]){
         res.send(books[isbn])
@@ -37,8 +86,33 @@ public_users.get('/isbn/:isbn',function (req, res) {
     }
  });
 
+
+ function getBooksByAuthor(author) {
+   return new Promise((resolve, reject) => {
+     axios.get(`http://localhost:5000/book/${author}`)
+       .then(response => {
+         resolve(response.data);
+       })
+       .catch(error => {
+         reject(error);
+       });
+   });
+ }
+ 
+ public_users.get('/author/:author', function (req, res) {
+   const author = req.params.author;
+   getBooksByAuthor(author)
+     .then(books => {
+       res.send(JSON.stringify({ books }, null, 4));
+     })
+     .catch(error => {
+       console.error(error);
+       res.status(500).send('An error occurred while getting books by author');
+     });
+ });
+ 
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
+public_users.get('/book/:author',function (req, res) {
     let author = req.params.author;
     let booksWithSameAuthor = [];
     for(i=1;i<=10;i++){
@@ -49,8 +123,31 @@ public_users.get('/author/:author',function (req, res) {
     res.send(booksWithSameAuthor);
 });
 
+function getBooksByTitle(title) {
+    return new Promise((resolve, reject) => {
+      axios.get(`http://localhost:5000/dooks/${title}`)
+        .then(response => {
+          resolve(response.data);
+        })
+        .catch(error => {
+          reject(error);
+        });
+    });
+  }
+  
+  public_users.get('/title/:title', function (req, res) {
+    const title = req.params.title;
+    getBooksByTitle(title)
+      .then(books => {
+        res.send(JSON.stringify({ books }, null, 4));
+      })
+      .catch(error => {
+        console.error(error);
+        res.status(500).send('An error occurred while getting books by title');
+      });
+  });
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
+public_users.get('/dooks/:title',function (req, res) {
     let title = req.params.title;
     for(i=1;i<=10;i++){
         if(books[i].title==title){
